@@ -8,7 +8,7 @@ import { useFormik } from 'formik';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as yup from 'yup';
-import { useUser } from '../context/UserContext';
+import { UserData, useUser } from '../context/UserContext';
 
 const { width } = Dimensions.get('window');
 
@@ -92,35 +92,42 @@ export default function Login() {
     validationSchema,
     onSubmit: async (values) => {
       try {
+        // Check if it's an admin login
+        if (values.email === 'admin@zpocket.com' && values.password === 'admin123') {
+          const adminData: UserData = {
+            username: 'Admin',
+            email: values.email,
+            role: 'admin',
+            created_at: new Date().toISOString(),
+            achievements: 0
+          };
+          
+          await AsyncStorage.setItem('userData', JSON.stringify(adminData));
+          setUserData(adminData);
+          router.replace('/(admin)/dashboard' as any);
+          return;
+        }
+
         const response = await axios.post('https://ecommerce.routemisr.com/api/v1/auth/signin', values);
         
         // Get existing user data from storage
         const existingData = await AsyncStorage.getItem('userData');
-        let existingAchievements = {};
-        let existingProgress = {
-          completedModules: 0,
-          totalModules: 4,
-          averageScore: 0
-        };
+        let existingAchievements = 0;
         
         if (existingData) {
           const parsedData = JSON.parse(existingData);
           if (parsedData.achievements) {
             existingAchievements = parsedData.achievements;
           }
-          if (parsedData.progress) {
-            existingProgress = parsedData.progress;
-          }
         }
         
-        // Create user data object from response, preserving existing achievements and progress
-        const userData = {
+        // Create user data object from response, preserving existing achievements
+        const userData: UserData = {
           username: response.data.user.name,
           email: response.data.user.email,
-          date_of_birth: response.data.user.date_of_birth || new Date().toISOString(),
           created_at: response.data.user.created_at || new Date().toISOString(),
-          progress: existingProgress,
-          achievements: existingAchievements
+          achievements: existingAchievements,
+          role: 'user'
         };
 
         // Save user data to context and storage
@@ -263,6 +270,19 @@ export default function Login() {
                   </LinearGradient>
                 </TouchableOpacity>
               </Animated.View>
+
+              <TouchableOpacity
+                style={styles.adminButton}
+                onPress={() => {
+                  formik.setValues({
+                    email: 'admin@zpocket.com',
+                    password: 'admin123'
+                  });
+                  formik.handleSubmit();
+                }}
+              >
+                <Text style={styles.adminButtonText}>Sign in as Admin</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.registerButton}
@@ -408,5 +428,17 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14,
     marginTop: 4,
+  },
+  adminButton: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  adminButtonText: {
+    color: '#10B981',
+    fontSize: 16,
+    fontWeight: '500',
   },
 }); 

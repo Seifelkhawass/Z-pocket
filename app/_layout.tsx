@@ -22,6 +22,14 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="(app)" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen 
+          name="(admin)" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: false,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
           name="modules" 
           options={{ 
             animation: 'slide_from_right',
@@ -54,7 +62,39 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen 
+          name="modules/Crypto/videos" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
+          name="modules/Crypto/Quiz" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
+          name="(admin)/createVideo" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
           name="modules/E Wallets/video" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
+          name="modules/E Wallets/Quiz" 
           options={{ 
             animation: 'slide_from_right',
             gestureEnabled: true,
@@ -70,7 +110,23 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen 
+          name="modules/Investment/Quiz" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
           name="modules/Money earning/video" 
+          options={{ 
+            animation: 'slide_from_right',
+            gestureEnabled: true,
+            headerShown: false
+          }} 
+        />
+        <Stack.Screen 
+          name="modules/Money earning/Quiz" 
           options={{ 
             animation: 'slide_from_right',
             gestureEnabled: true,

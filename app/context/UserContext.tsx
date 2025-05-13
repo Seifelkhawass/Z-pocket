@@ -2,46 +2,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export interface UserData {
-  username: string;
-  email: string;
-  phone?: string;
-  date_of_birth: string;
-  created_at: string;
-  // Temporary admin flag for testing - REMOVE IN PRODUCTION
-  isAdmin?: boolean;
-  progress: {
-    completedModules: number;
-    totalModules: number;
-    averageScore: number;
-  };
-  achievements: {
-    cryptoQuiz?: {
-      completed: boolean;
-      score: number;
-      date: string;
-    };
-    walletsQuiz?: {
-      completed: boolean;
-      score: number;
-      date: string;
-    };
-    investmentQuiz?: {
-      completed: boolean;
-      score: number;
-      date: string;
-    };
-    moneyEarningQuiz?: {
-      completed: boolean;
-      score: number;
-      date: string;
-    };
-  };
+  id?: number;
+  username?: string;
+  email?: string;
+  created_at?: string;
+  achievements?: number;
+  role?: 'admin' | 'user';
 }
 
 interface UserContextType {
   userData: UserData | null;
-  setUserData: (data: UserData) => void;
-  clearUserData: () => void;
+  setUserData: (data: UserData | null) => void;
+  updateUserData: (data: Partial<UserData>) => void;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -66,27 +39,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateUserData = async (data: UserData) => {
+  const updateUserData = async (newData: Partial<UserData>) => {
     try {
-      console.log('Saving user data to storage:', data);
-      await AsyncStorage.setItem('userData', JSON.stringify(data));
-      setUserData(data);
+      const updatedData = { ...userData, ...newData };
+      setUserData(updatedData);
+      await AsyncStorage.setItem('userData', JSON.stringify(updatedData));
     } catch (error) {
-      console.error('Error saving user data:', error);
+      console.error('Error updating user data:', error);
     }
   };
 
-  const clearUserData = async () => {
+  const logout = async () => {
     try {
-      // Instead of removing the data, we'll just clear the state
+      await AsyncStorage.removeItem('userData');
       setUserData(null);
     } catch (error) {
-      console.error('Error clearing user data:', error);
+      console.error('Error during logout:', error);
     }
   };
 
   return (
-    <UserContext.Provider value={{ userData, setUserData: updateUserData, clearUserData }}>
+    <UserContext.Provider value={{ userData, setUserData, updateUserData, logout }}>
       {children}
     </UserContext.Provider>
   );

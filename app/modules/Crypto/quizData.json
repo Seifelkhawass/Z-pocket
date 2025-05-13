@@ -1,0 +1,147 @@
+{
+  "success": true,
+  "module_id": 1,
+  "count": 5,
+  "data": [
+    {
+      "question_id": 1,
+      "module_id": 1,
+      "content": "What is the main purpose of blockchain technology?",
+      "type": "mcq",
+      "answers": [
+        {
+          "answer_id": 1,
+          "answer_text": "To create a decentralized and secure way to record transactions",
+          "is_correct": true
+        },
+        {
+          "answer_id": 2,
+          "answer_text": "To make online payments faster",
+          "is_correct": false
+        },
+        {
+          "answer_id": 3,
+          "answer_text": "To store large amounts of data",
+          "is_correct": false
+        },
+        {
+          "answer_id": 4,
+          "answer_text": "To replace traditional banking",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "question_id": 2,
+      "module_id": 1,
+      "content": "What is the process of creating new bitcoins called?",
+      "type": "mcq",
+      "answers": [
+        {
+          "answer_id": 5,
+          "answer_text": "Mining",
+          "is_correct": true
+        },
+        {
+          "answer_id": 6,
+          "answer_text": "Minting",
+          "is_correct": false
+        },
+        {
+          "answer_id": 7,
+          "answer_text": "Forging",
+          "is_correct": false
+        },
+        {
+          "answer_id": 8,
+          "answer_text": "Creating",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "question_id": 3,
+      "module_id": 1,
+      "content": "What is a smart contract?",
+      "type": "mcq",
+      "answers": [
+        {
+          "answer_id": 9,
+          "answer_text": "A self-executing contract with the terms written in code",
+          "is_correct": true
+        },
+        {
+          "answer_id": 10,
+          "answer_text": "A legal document for cryptocurrency transactions",
+          "is_correct": false
+        },
+        {
+          "answer_id": 11,
+          "answer_text": "A type of cryptocurrency wallet",
+          "is_correct": false
+        },
+        {
+          "answer_id": 12,
+          "answer_text": "A security protocol for blockchain",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "question_id": 4,
+      "module_id": 1,
+      "content": "What is the maximum supply of Bitcoin?",
+      "type": "mcq",
+      "answers": [
+        {
+          "answer_id": 13,
+          "answer_text": "21 million",
+          "is_correct": true
+        },
+        {
+          "answer_id": 14,
+          "answer_text": "100 million",
+          "is_correct": false
+        },
+        {
+          "answer_id": 15,
+          "answer_text": "Unlimited",
+          "is_correct": false
+        },
+        {
+          "answer_id": 16,
+          "answer_text": "1 billion",
+          "is_correct": false
+        }
+      ]
+    },
+    {
+      "question_id": 5,
+      "module_id": 1,
+      "content": "What is a private key in cryptocurrency?",
+      "type": "mcq",
+      "answers": [
+        {
+          "answer_id": 17,
+          "answer_text": "A secret number that allows you to spend your cryptocurrency",
+          "is_correct": true
+        },
+        {
+          "answer_id": 18,
+          "answer_text": "A password for your cryptocurrency exchange account",
+          "is_correct": false
+        },
+        {
+          "answer_id": 19,
+          "answer_text": "A key to access your cryptocurrency wallet",
+          "is_correct": false
+        },
+        {
+          "answer_id": 20,
+          "answer_text": "A security code for blockchain transactions",
+          "is_correct": false
+        }
+      ]
+    }
+  ]
+} 

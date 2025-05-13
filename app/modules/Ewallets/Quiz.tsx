@@ -22,11 +22,6 @@ interface Question {
   updated_at: string;
 }
 
-interface Answer {
-  question_id: number;
-  answer: string;
-}
-
 export default function Quiz() {
   const router = useRouter();
   const { userData } = useUser();
@@ -37,56 +32,9 @@ export default function Quiz() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
-
-  const postQuestions = async (questionsToPost: any[]) => {
-    try {
-      const baseUrls = [
-        'http://127.0.0.1:8000',
-        'http://localhost:8000',
-        'http://192.168.100.8:8000',
-        'http://10.0.2.2:8000'
-      ];
-
-      for (const baseUrl of baseUrls) {
-        try {
-          for (const question of questionsToPost) {
-            const response = await axios.post(
-              `${baseUrl}/api/questions/9`,
-              {
-                content: question.content,
-                type: question.type
-              },
-              {
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                },
-                timeout: 5000,
-              }
-            );
-
-            if (response.data && response.data.success) {
-              console.log(`[Quiz] Question posted successfully to ${baseUrl}`);
-            } else {
-              console.log('[Quiz] Failed to post question:', response.data);
-            }
-          }
-          return; // If we get here, all questions were posted successfully
-        } catch (error) {
-          console.log(`[Quiz] Failed to post questions to ${baseUrl}:`, error);
-          continue;
-        }
-      }
-    } catch (error) {
-      console.error('[Quiz] Error posting questions:', error);
-      throw error;
-    }
-  };
 
   useEffect(() => {
     fetchQuestions();
-    fetchAnswers();
   }, []);
 
   const fetchQuestions = async () => {
@@ -101,13 +49,11 @@ export default function Quiz() {
         'http://10.0.2.2:8000'
       ];
 
-      // POST http://127.0.0.1:8000/api/admins/answer/9
-
       let lastError = null;
       for (const baseUrl of baseUrls) {
         try {
-          console.log(`[Quiz] Attempting to connect to ${baseUrl}/api/user/ModuleQuestions/10`);
-          const response = await axios.get<{ success: boolean; data: Question[] }>(`${baseUrl}/api/user/ModuleQuestions/10`, {
+          console.log(`[Quiz] Attempting to connect to ${baseUrl}/api/user/ModuleQuestions/2`);
+          const response = await axios.get<{ success: boolean; data: Question[] }>(`${baseUrl}/api/user/ModuleQuestions/2`, {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
@@ -168,40 +114,6 @@ export default function Quiz() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAnswers = async () => {
-    try {
-      const baseUrls = [
-        'http://127.0.0.1:8000',
-        'http://localhost:8000',
-        'http://192.168.100.8:8000',
-        'http://10.0.2.2:8000'
-      ];
-      for (const baseUrl of baseUrls) {
-        try {
-          const response = await axios.get(`${baseUrl}/api/questions/9/answers`, {
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            timeout: 5000,
-          });
-          if (response.data && response.data.success && Array.isArray(response.data.data)) {
-            const answerMap: { [key: number]: string } = {};
-            response.data.data.forEach((ans: any) => {
-              answerMap[ans.question_id] = ans.answer;
-            });
-            setAnswers(answerMap);
-            return;
-          }
-        } catch (error) {
-          continue;
-        }
-      }
-    } catch (error) {
-      // Ignore answer fetch errors for now
     }
   };
 
@@ -276,21 +188,12 @@ export default function Quiz() {
             {Math.round((score / questions.length) * 100)}%
           </Text>
           
-          {Math.round((score / questions.length) * 100) >= 50 ? (
-            <TouchableOpacity
-              style={styles.nextModuleButton}
-              onPress={() => router.push('/modules/Money earning/videos' as any)}
-            >
-              <Text style={styles.nextModuleButtonText}>Go to Next Module</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={handleRetry}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRetry}
+          >
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.backToVideosButton}
@@ -331,7 +234,7 @@ export default function Quiz() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Cryptooos Quiz</Text>
+        <Text style={styles.headerTitle}>Ewallets Quiz</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -340,11 +243,6 @@ export default function Quiz() {
             <View key={question.question_id} style={styles.quizBox}>
               <Text style={styles.quizTitle}>Question {idx + 1}</Text>
               <Text style={styles.quizDescription}>{question.content}</Text>
-              {showResults && answers[question.question_id] && (
-                <Text style={{ color: '#10B981', marginTop: 8 }}>
-                  Correct Answer: {answers[question.question_id]}
-                </Text>
-              )}
             </View>
           ))}
         </View>
@@ -493,16 +391,5 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
     lineHeight: 20,
-  },
-  nextModuleButton: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  nextModuleButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

@@ -499,5 +499,5 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14,
     marginTop: 4,
-  },
-}); 
+  }
+});

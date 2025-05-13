@@ -1,172 +1,225 @@
+import { useUser } from '@/app/context/UserContext';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useUser } from '../../context/UserContext';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
-export default function MoneyEarningQuiz() {
+interface Question {
+  question_id: number;
+  module_id: number;
+  content: string;
+  type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export default function Quiz() {
   const router = useRouter();
-  const { userData, setUserData } = useUser();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const { userData } = useUser();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [score, setScore] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showScore, setShowScore] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
-  // Redirect to login if not authenticated
-  if (!userData) {
-    router.replace('/(auth)/login');
-    return null;
-  }
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
 
-  const questions = [
-    {
-      question: "What is crypto mining?",
-      answers: [
-        "A way to create new cryptocurrencies",
-        "A process of validating transactions and creating new blocks",
-        "A method to buy cryptocurrencies",
-        "A type of cryptocurrency wallet"
-      ],
-      correctAnswer: 1
-    },
-    {
-      question: "What is staking in cryptocurrency?",
-      answers: [
-        "A type of cryptocurrency exchange",
-        "A way to earn rewards by holding and validating transactions",
-        "A method to mine cryptocurrencies",
-        "A type of cryptocurrency wallet"
-      ],
-      correctAnswer: 1
-    },
-    {
-      question: "What is yield farming?",
-      answers: [
-        "A way to mine cryptocurrencies",
-        "A method to buy cryptocurrencies",
-        "A strategy to earn rewards by providing liquidity to DeFi protocols",
-        "A type of cryptocurrency wallet"
-      ],
-      correctAnswer: 2
-    }
-  ];
+  const fetchQuestions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const handleAnswer = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
-    if (answerIndex === questions[currentQuestion].correctAnswer) {
-      setScore(score + 1);
+      const baseUrls = [
+        'http://127.0.0.1:8000',
+        'http://localhost:8000',
+        'http://192.168.100.8:8000',
+        'http://10.0.2.2:8000'
+      ];
+
+      let lastError = null;
+      for (const baseUrl of baseUrls) {
+        try {
+          console.log(`[Quiz] Attempting to connect to ${baseUrl}/api/user/ModuleQuestions/4`);
+          const response = await axios.get<{ success: boolean; data: Question[] }>(`${baseUrl}/api/user/ModuleQuestions/4`, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            timeout: 5000,
+          });
+
+          console.log('[Quiz] Response received:', {
+            status: response.status,
+            data: response.data,
+            success: response.data?.success,
+            isArray: Array.isArray(response.data?.data)
+          });
+
+          if (response.data && response.data.success && response.data.data) {
+            console.log('[Quiz] Questions loaded successfully from:', baseUrl);
+            setQuestions(response.data.data);
+            return;
+          } else {
+            console.log('[Quiz] Invalid response format:', {
+              success: response.data?.success,
+              hasData: !!response.data?.data,
+              isArray: Array.isArray(response.data?.data)
+            });
+            lastError = 'Invalid response format from server';
+          }
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            console.log(`[Quiz] Failed to connect to ${baseUrl}:`, {
+              code: error.code,
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+          } else {
+            console.log(`[Quiz] Failed to connect to ${baseUrl}:`, error);
+          }
+          lastError = error;
+          continue;
+        }
+      }
+
+      throw lastError;
+    } catch (error) {
+      console.error('[Quiz] Error fetching questions:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNREFUSED') {
+          setError('Server is not running. Please start your Laravel server with "php artisan serve" and try again.');
+        } else if (error.response) {
+          setError(`Server error (${error.response.status}): ${error.response.data.message || 'Unknown error'}`);
+        } else if (error.request) {
+          setError('Server is not responding. Please check if your Laravel server is running and try again.');
+        } else {
+          setError('Error setting up request: ' + error.message);
+        }
+      } else {
+        setError('An unexpected error occurred: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+  const handleAnswerSelect = (answer: string) => {
+    setSelectedAnswer(answer);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);
     } else {
-      setShowScore(true);
-      // Save achievements when quiz is completed
-      if (userData) {
-        const percentage = (score / questions.length) * 100;
-        const newUserData = {
-          ...userData,
-          achievements: {
-            ...userData.achievements,
-            moneyEarningQuiz: {
-              completed: percentage >= 50,
-              score: percentage,
-              date: new Date().toISOString()
-            }
-          }
-        };
-        setUserData(newUserData);
-      }
+      setShowResults(true);
     }
   };
 
-  const handleRetake = () => {
-    setCurrentQuestion(0);
-    setScore(0);
-    setShowScore(false);
+  const handleRetry = () => {
+    setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
+    setScore(0);
+    setShowResults(false);
   };
 
-  const handleBackToVideos = () => {
-    router.push('/modules/Modules');
-  };
-
-  const handleViewAchievements = () => {
-    router.push('/modules/Achievements/AchievementsList');
-  };
-
-  const calculatePercentage = () => {
-    return (score / questions.length) * 100;
-  };
-
-  if (showScore) {
+  if (loading) {
     return (
       <LinearGradient
         colors={['#4B0082', '#6B46C1', '#805AD5']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+      >
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={{ color: '#fff', marginTop: 10 }}>Loading questions...</Text>
+      </LinearGradient>
+    );
+  }
+
+  if (error) {
+    return (
+      <LinearGradient
+        colors={['#4B0082', '#6B46C1', '#805AD5']}
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+      >
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            onPress={fetchQuestions}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  if (showResults) {
+    return (
+      <LinearGradient
+        colors={['#4B0082', '#6B46C1', '#805AD5']}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Animated.View
-            entering={FadeInDown.duration(1000)}
-            style={{ alignItems: 'center' }}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quiz Results</Text>
+        </View>
+
+        <View style={styles.resultsContainer}>
+          <Text style={styles.resultsTitle}>Quiz Completed!</Text>
+          <Text style={styles.scoreText}>Your Score: {score} out of {questions.length}</Text>
+          <Text style={styles.percentageText}>
+            {Math.round((score / questions.length) * 100)}%
+          </Text>
+          
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={handleRetry}
           >
-            <Text style={{ color: '#fff', fontSize: 32, fontWeight: 'bold', marginBottom: 20 }}>
-              Quiz Complete!
-            </Text>
-            <Text style={{ color: '#fff', fontSize: 24, marginBottom: 8 }}>
-              Your Score: {score}/{questions.length}
-            </Text>
-            <Text style={{ color: '#fff', fontSize: 24, marginBottom: 40 }}>
-              Percentage: {calculatePercentage()}%
-            </Text>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
 
-            {calculatePercentage() >= 50 ? (
-              <>
-                <Text style={{ color: '#10B981', fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>
-                  Congratulations! You passed!
-                </Text>
-                <TouchableOpacity
-                  onPress={handleViewAchievements}
-                  style={{
-                    backgroundColor: '#10B981',
-                    padding: 16,
-                    borderRadius: 12,
-                    width: '100%',
-                    marginBottom: 16
-                  }}
-                >
-                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold', fontSize: 18 }}>
-                    View Achievements
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <Text style={{ color: '#EF4444', fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>
-                You need at least 50% to proceed
-              </Text>
-            )}
+          <TouchableOpacity
+            style={styles.backToVideosButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backToVideosText}>Back to Videos</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    );
+  }
 
-            <TouchableOpacity
-              onPress={handleRetake}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: 16,
-                borderRadius: 12,
-                width: '100%'
-              }}
-            >
-              <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold', fontSize: 18 }}>
-                Retake Quiz
-              </Text>
-            </TouchableOpacity>
-          </Animated.View>
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return (
+      <LinearGradient
+        colors={['#4B0082', '#6B46C1', '#805AD5']}
+        style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+      >
+        <View style={styles.noQuestionsContainer}>
+          <Text style={styles.noQuestionsText}>No questions available.</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchQuestions}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </LinearGradient>
     );
@@ -175,67 +228,168 @@ export default function MoneyEarningQuiz() {
   return (
     <LinearGradient
       colors={['#4B0082', '#6B46C1', '#805AD5']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
       style={{ flex: 1 }}
     >
-      <View style={{ paddingHorizontal: 20, paddingTop: 64, flexDirection: 'row', alignItems: 'center' }}>
-        <TouchableOpacity 
-          onPress={handleBackToVideos}
-          style={{ position: 'absolute', left: 20, zIndex: 10 }}
-        >
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#fff', textAlign: 'center', flex: 1 }}>
-          Money Earning Quiz
-        </Text>
+        <Text style={styles.headerTitle}>Money earning Quiz</Text>
       </View>
 
-      <ScrollView style={{ flex: 1, padding: 20 }}>
-        <View>
-          <Text style={{ color: '#fff', fontSize: 20, marginBottom: 20 }}>
-            Question {currentQuestion + 1} of {questions.length}
-          </Text>
-
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>
-            {questions[currentQuestion].question}
-          </Text>
-
-          <View style={{ gap: 12 }}>
-            {questions[currentQuestion].answers.map((answer, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleAnswer(index)}
-                style={{
-                  backgroundColor: selectedAnswer === index ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                  padding: 16,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: selectedAnswer === index ? '#fff' : 'rgba(255, 255, 255, 0.2)',
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 16 }}>{answer}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {selectedAnswer !== null && (
-            <TouchableOpacity
-              onPress={handleNext}
-              style={{
-                backgroundColor: '#10B981',
-                padding: 16,
-                borderRadius: 12,
-                marginTop: 20,
-              }}
-            >
-              <Text style={{ color: '#fff', textAlign: 'center', fontWeight: 'bold', fontSize: 18 }}>
-                {currentQuestion < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
-              </Text>
-            </TouchableOpacity>
-          )}
+      <ScrollView style={styles.content}>
+        <View style={styles.quizList}>
+          {questions.map((question, idx) => (
+            <View key={question.question_id} style={styles.quizBox}>
+              <Text style={styles.quizTitle}>Question {idx + 1}</Text>
+              <Text style={styles.quizDescription}>{question.content}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </LinearGradient>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  backButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginLeft: 16,
+    marginTop: 70,
+  },
+  content: {
+    flex: 1,
+    padding: 10,
+  },
+  progressContainer: {
+    marginBottom: 20,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  progressBar: {
+    height: 20,
+    backgroundColor: '#ccc',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+  },
+  questionContainer: {
+    marginBottom: 20,
+  },
+  questionText: {
+    fontSize: 16,
+  },
+  nextButton: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  nextButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#fff',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  resultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  scoreText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  percentageText: {
+    fontSize: 16,
+  },
+  backToVideosButton: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  backToVideosText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  noQuestionsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noQuestionsText: {
+    color: '#fff',
+    marginBottom: 20, 
+  },
+  questionCard: {
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  questionNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  quizList: {
+    gap: 16,
+    marginTop: 8,
+  },
+  quizBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  quizTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  quizDescription: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+});
